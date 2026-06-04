@@ -22,12 +22,15 @@ def add_venue(eid, vid, is_primary):
     pass
 
 def reserve_slot(eid, snum, uid):
+    #spencer
     pass
 
 def cancel_reservation(eid, snum, uid):
+    #spencer
     pass
 
 def update_event(eid, title, datetime):
+    #spencer
     pass
 
 def delete_organizer(uid):
