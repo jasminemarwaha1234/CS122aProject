@@ -217,21 +217,17 @@ def reserve_slot(eid, snum, uid):
         )
         row = cursor.fetchone()
         if row is None or row[0] == 1:
-            print("fail")
+            print("Fail")
             return
         cursor.execute(
-            "UPDATE Slot SET is_reserved = 1 WHERE eid = %s AND snum = %s",
-            (eid, snum)
+            "UPDATE Slot SET is_reserved = 1, uid = %s WHERE eid = %s AND snum = %s",
+            (uid, eid, snum)
         )
 
-        cursor.execute(
-            "INSERT INTO Reservation (eid, snum, uid) VALUES (%s, %s, %s)",
-            (eid, snum, uid)
-        )
         conn.commit()
-        print("success")
+        print("Success")
     except:
-        print("fail 2")
+        print("Fail")
     finally:
         cursor.close()
         conn.close()
@@ -244,37 +240,22 @@ def cancel_reservation(eid, snum, uid):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT is_reversed FROM Slot WHERE eid = %s AND snum = %s",
+            "SELECT is_reserved, uid FROM Slot WHERE eid = %s AND snum = %s",
             (eid, snum)
         )
-
         row = cursor.fetchone()
-        if row is None or row[0] == 0:
-            print("fail")
-            return
-        
-        cursor.execute(
-            "SELECT * FROM Reservation WHERE eid = %s AND snum = %s AND uid = %s",
-            (eid, snum, uid)
-        )
-
-        if cursor.fetchone() is None:
-            print("fail 2")
+        if row is None or row[0] == 0 or str(row[1]) != str(uid):
+            print("Fail")
             return
 
         cursor.execute(
-            delete FROM Reservation WHERE eid = %s AND snum = %s AND uid = %s",
-            (eid, snum, uid)
-        )
-
-        cursor.execute(
-            "UPDATE Slot SET is_reserved = 0 WHERE eid = %s AND snum = %s",
+            "UPDATE Slot SET is_reserved = 0, uid = NULL WHERE eid = %s AND snum = %s",
             (eid, snum)
         )
         conn.commit()
-        print("yippee")
+        print("Success")
     except:
-        print("fail 3")
+        print("Fail")
     finally:
         cursor.close()
         conn.close()
@@ -292,12 +273,12 @@ def update_event(eid, title, datetime_val):
         )
 
         if cursor.rowcount == 0:
-            print("fail")
+            print("Fail")
         else:
             conn.commit()
-            print("success")
+            print("Success")
     except:
-        print("fail 2")
+        print("Fail")
     finally:
         cursor.close()
         conn.close()
