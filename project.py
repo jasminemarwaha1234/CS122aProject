@@ -293,13 +293,111 @@ def popular_event_types(n):
     pass
 
 def participant_schedule(uid):
-    pass
+    # ryan
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            SELECT 
+                e.eid,
+                e.title,
+                e.type,
+                e.datetime,
+                s.snum,
+                v.vid,
+                v.street,
+                v.city,
+                v.state,
+                v.zip
+            FROM Slot s
+            JOIN Event e ON s.eid = e.eid
+            LEFT JOIN Hosting h ON e.eid = h.eid AND h.is_primary = TRUE
+            LEFT JOIN Venue v ON h.vid = v.vid
+            WHERE s.uid = %s
+            ORDER BY e.datetime ASC
+        """
+
+        cursor.execute(query, (uid,))
+        rows = cursor.fetchall()
+
+        for row in rows:
+            print(','.join('' if val is None else str(val) for val in row))
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def organizer_stats(n):
-    pass
+    # ryan
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            SELECT
+                o.uid,
+                u.username,
+                o.department,
+                COUNT(e.eid) AS eventCount
+            FROM Organizer o
+            JOIN User u ON o.uid = u.uid
+            LEFT JOIN Event e ON o.uid = e.creator_uid
+            GROUP BY o.uid, u.username, o.department
+            HAVING COUNT(e.eid) >= %s
+            ORDER BY eventCount DESC, o.uid ASC
+        """
+
+        cursor.execute(query, (n,))
+        rows = cursor.fetchall()
+
+        for row in rows:
+            print(','.join('' if val is None else str(val) for val in row))
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def venue_events(vid):
-    pass
+    # ryan
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            SELECT
+                e.eid,
+                e.title,
+                e.type,
+                e.datetime,
+                h.is_primary
+            FROM Hosting h
+            JOIN Event e ON h.eid = e.eid
+            WHERE h.vid = %s
+            ORDER BY e.datetime ASC, e.eid ASC
+        """
+
+        cursor.execute(query, (vid,))
+        rows = cursor.fetchall()
+
+        for row in rows:
+            print(','.join('' if val is None else str(val) for val in row))
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def main():
     func = sys.argv[1]
