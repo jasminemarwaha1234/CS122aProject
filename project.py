@@ -264,7 +264,30 @@ def available_events(date):
         conn.close()
 
 def popular_event_types(n):
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT e.type, COUNT(s.snum) AS reservedCount
+            FROM Event e
+            JOIN Slot s ON e.eid = s.eid
+            WHERE s.is_reserved = TRUE
+            GROUP BY e.type
+            HAVING COUNT(s.snum) >= %s
+            ORDER BY reservedCount DESC, e.type ASC
+        """, (n,))
+
+        for row in cursor.fetchall():
+            print(f"{row[0]},{row[1]}")
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def participant_schedule(uid):
     pass
