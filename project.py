@@ -387,7 +387,7 @@ def participant_schedule(uid):
         rows = cursor.fetchall()
 
         for row in rows:
-            print(','.join('' if val is None else str(val) for val in row))
+            print(','.join('NULL' if val is None else str(val) for val in row))
 
     except Exception as e:
         print("Fail")
