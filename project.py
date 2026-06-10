@@ -239,6 +239,7 @@ def delete_organizer(uid):
         conn.close()
 
 def available_events(date):
+    # em
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -264,6 +265,7 @@ def available_events(date):
         conn.close()
 
 def popular_event_types(n):
+    # em
     try:
         conn = get_connection()
         cursor = conn.cursor()
