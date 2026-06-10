@@ -268,7 +268,37 @@ def participant_schedule(uid):
 
 def organizer_stats(n):
     # ryan
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            SELECT
+                o.uid,
+                u.username,
+                o.department,
+                COUNT(e.eid) AS eventCount
+            FROM Organizer o
+            JOIN User u ON o.uid = u.uid
+            LEFT JOIN Event e ON o.uid = e.creator_uid
+            GROUP BY o.uid, u.username, o.department
+            HAVING COUNT(e.eid) >= %s
+            ORDER BY eventCount DESC, o.uid ASC
+        """
+
+        cursor.execute(query, (n,))
+        rows = cursor.fetchall()
+
+        for row in rows:
+            print(','.join('' if val is None else str(val) for val in row))
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def venue_events(vid):
     # ryan
