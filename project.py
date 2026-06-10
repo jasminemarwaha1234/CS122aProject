@@ -207,15 +207,81 @@ def add_venue(eid, vid, is_primary):
 
 def reserve_slot(eid, snum, uid):
     #spencer
-    pass
+    try: 
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT is_reserved FROM Slot WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+        row = cursor.fetchone()
+        if row is None or row[0] == 1:
+            print("Fail")
+            return
+        cursor.execute(
+            "UPDATE Slot SET is_reserved = 1, uid = %s WHERE eid = %s AND snum = %s",
+            (uid, eid, snum)
+        )
+
+        conn.commit()
+        print("Success")
+    except:
+        print("Fail")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def cancel_reservation(eid, snum, uid):
     #spencer
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-def update_event(eid, title, datetime):
+        cursor.execute(
+            "SELECT is_reserved, uid FROM Slot WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+        row = cursor.fetchone()
+        if row is None or row[0] == 0 or str(row[1]) != str(uid):
+            print("Fail")
+            return
+
+        cursor.execute(
+            "UPDATE Slot SET is_reserved = 0, uid = NULL WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+        conn.commit()
+        print("Success")
+    except:
+        print("Fail")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def update_event(eid, title, datetime_val):
     #spencer
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "UPDATE Event SET title = %s, datetime = %s WHERE eid = %s",
+            (title, datetime_val, eid)
+        )
+
+        if cursor.rowcount == 0:
+            print("Fail")
+        else:
+            conn.commit()
+            print("Success")
+    except:
+        print("Fail")
+    finally:
+        cursor.close()
+        conn.close()
 
 def delete_organizer(uid):
     pass
