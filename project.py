@@ -218,10 +218,10 @@ def update_event(eid, title, datetime):
     pass
 
 def delete_organizer(uid):
+    # em
     try:
         conn = get_connection()
         cursor = conn.cursor()
-
         cursor.execute("DELETE FROM Organizer WHERE uid = %s", (uid,))
         conn.commit()
 
@@ -239,7 +239,29 @@ def delete_organizer(uid):
         conn.close()
 
 def available_events(date):
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT e.eid, e.title, e.type, e.datetime, COUNT(s.snum) AS availableSlots
+            FROM Event e
+            JOIN Slot s ON e.eid = s.eid
+            WHERE e.datetime > %s AND s.is_reserved = FALSE
+            GROUP BY e.eid, e.title, e.type, e.datetime
+            ORDER BY e.datetime ASC, e.eid ASC
+        """, (date,))
+
+        for row in cursor.fetchall():
+            print(f"{row[0]},{row[1]},{row[2]},{row[3]},{row[4]}")
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def popular_event_types(n):
     pass
