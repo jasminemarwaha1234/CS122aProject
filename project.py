@@ -23,15 +23,100 @@ def add_venue(eid, vid, is_primary):
 
 def reserve_slot(eid, snum, uid):
     #spencer
-    pass
+    try: 
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT is_reserved FROM Slot WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+        row = cursor.fetchone()
+        if row is None or row[0] == 1:
+            print("fail")
+            return
+        cursor.execute(
+            "UPDATE Slot SET is_reserved = 1 WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+
+        cursor.execute(
+            "INSERT INTO Reservation (eid, snum, uid) VALUES (%s, %s, %s)",
+            (eid, snum, uid)
+        )
+        conn.commit()
+        print("success")
+    except:
+        print("fail 2")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def cancel_reservation(eid, snum, uid):
     #spencer
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-def update_event(eid, title, datetime):
+        cursor.execute(
+            "SELECT is_reversed FROM Slot WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+
+        row = cursor.fetchone()
+        if row is None or row[0] == 0:
+            print("fail")
+            return
+        
+        cursor.execute(
+            "SELECT * FROM Reservation WHERE eid = %s AND snum = %s AND uid = %s",
+            (eid, snum, uid)
+        )
+
+        if cursor.fetchone() is None:
+            print("fail 2")
+            return
+
+        cursor.execute(
+            delete FROM Reservation WHERE eid = %s AND snum = %s AND uid = %s",
+            (eid, snum, uid)
+        )
+
+        cursor.execute(
+            "UPDATE Slot SET is_reserved = 0 WHERE eid = %s AND snum = %s",
+            (eid, snum)
+        )
+        conn.commit()
+        print("yippee")
+    except:
+        print("fail 3")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def update_event(eid, title, datetime_val):
     #spencer
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "UPDATE Event SET title = %s, datetime = %s WHERE eid = %s",
+            (title, datetime_val, eid)
+        )
+
+        if cursor.rowcount == 0:
+            print("fail")
+        else:
+            conn.commit()
+            print("success")
+    except:
+        print("fail 2")
+    finally:
+        cursor.close()
+        conn.close()
 
 def delete_organizer(uid):
     pass
