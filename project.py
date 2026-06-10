@@ -218,7 +218,25 @@ def update_event(eid, title, datetime):
     pass
 
 def delete_organizer(uid):
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM Organizer WHERE uid = %s", (uid,))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            print("Fail")
+        else:
+            print("Success")
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def available_events(date):
     pass
