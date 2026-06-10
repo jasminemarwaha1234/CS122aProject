@@ -11,15 +11,199 @@ def get_connection():
 
 def import_data(folder):
     #jasmine
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DROP TABLE IF EXISTS Approval")
+        cursor.execute("DROP TABLE IF EXISTS Hosting")
+        cursor.execute("DROP TABLE IF EXISTS Slot")
+        cursor.execute("DROP TABLE IF EXISTS Event")
+        cursor.execute("DROP TABLE IF EXISTS OffCampus")
+        cursor.execute("DROP TABLE IF EXISTS OnCampus")
+        cursor.execute("DROP TABLE IF EXISTS Venue")
+        cursor.execute("DROP TABLE IF EXISTS Administrator")
+        cursor.execute("DROP TABLE IF EXISTS Participant")
+        cursor.execute("DROP TABLE IF EXISTS Organizer")
+        cursor.execute("DROP TABLE IF EXISTS User")
+
+        cursor.execute("""
+            CREATE TABLE User (
+                uid INT,
+                email TEXT NOT NULL,
+                username TEXT NOT NULL,
+                joined DATE NOT NULL,
+                PRIMARY KEY (uid)
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Organizer (
+                uid INT,
+                department TEXT NOT NULL,
+                experience INT NOT NULL,
+                PRIMARY KEY (uid),
+                FOREIGN KEY (uid) REFERENCES User(uid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Participant (
+                uid INT,
+                type TEXT,
+                PRIMARY KEY (uid),
+                FOREIGN KEY (uid) REFERENCES User(uid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Administrator (
+                uid INT,
+                firstname TEXT NOT NULL,
+                lastname TEXT NOT NULL,
+                PRIMARY KEY (uid),
+                FOREIGN KEY (uid) REFERENCES User(uid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Event (
+                eid INT,
+                creator_uid INT NOT NULL,
+                title TEXT NOT NULL,
+                type TEXT NOT NULL,
+                datetime DATETIME NOT NULL,
+                PRIMARY KEY (eid),
+                FOREIGN KEY (creator_uid) REFERENCES Organizer(uid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Slot (
+                eid INT,
+                snum INT NOT NULL,
+                is_reserved BOOLEAN NOT NULL,
+                uid INT,
+                PRIMARY KEY (eid, snum),
+                FOREIGN KEY (eid) REFERENCES Event(eid) ON DELETE CASCADE,
+                FOREIGN KEY (uid) REFERENCES Participant(uid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Venue (
+                vid INT,
+                street TEXT NOT NULL,
+                city TEXT NOT NULL,
+                state TEXT NOT NULL,
+                zip TEXT NOT NULL,
+                PRIMARY KEY (vid)
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE OnCampus (
+                vid INT,
+                code TEXT NOT NULL,
+                PRIMARY KEY (vid),
+                FOREIGN KEY (vid) REFERENCES Venue(vid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE OffCampus (
+                vid INT,
+                distance INT NOT NULL,
+                PRIMARY KEY (vid),
+                FOREIGN KEY (vid) REFERENCES Venue(vid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Hosting (
+                eid INT NOT NULL,
+                vid INT NOT NULL,
+                is_primary BOOLEAN NOT NULL,
+                PRIMARY KEY (eid, vid),
+                FOREIGN KEY (eid) REFERENCES Event(eid) ON DELETE CASCADE,
+                FOREIGN KEY (vid) REFERENCES Venue(vid) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE Approval (
+                uid INT NOT NULL,
+                vid INT NOT NULL,
+                valid_from DATE NOT NULL,
+                valid_until DATE NOT NULL,
+                PRIMARY KEY (uid, vid),
+                FOREIGN KEY (uid) REFERENCES Administrator(uid) ON DELETE CASCADE,
+                FOREIGN KEY (vid) REFERENCES OffCampus(vid) ON DELETE CASCADE
+            )
+        """)
+
+        tables = ['User', 'Organizer', 'Participant', 'Administrator',
+                  'Event', 'Slot', 'Venue', 'OnCampus', 'OffCampus',
+                  'Hosting', 'Approval']
+
+        for table in tables:
+            filepath = os.path.join(folder, f"{table}.csv")
+            with open(filepath, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    values = line.split(',')
+                    placeholders = ','.join(['%s'] * len(values))
+                    values = [None if v == 'NULL' else v for v in values]
+                    cursor.execute(f"INSERT INTO {table} VALUES ({placeholders})", values)
+
+        conn.commit()
+        print("Success")
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def insert_admin(uid, email, username, joined, firstname, lastname):
     #jasmine
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("INSERT INTO User VALUES (%s, %s, %s, %s)", (uid, email, username, joined))
+        cursor.execute("INSERT INTO Administrator VALUES (%s, %s, %s)", (uid, firstname, lastname))
+
+        conn.commit()
+        print("Success")
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def add_venue(eid, vid, is_primary):
     #jasmine
-    pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        is_primary_bool = is_primary.lower() == 'true'
+
+        if is_primary_bool:
+            cursor.execute("SELECT * FROM Hosting WHERE eid = %s AND is_primary = true", (eid,))
+            if cursor.fetchone():
+                print("Fail")
+                return
+
+        cursor.execute("INSERT INTO Hosting VALUES (%s, %s, %s)", (eid, vid, is_primary_bool))
+        conn.commit()
+        print("Success")
+
+    except Exception as e:
+        print("Fail")
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
 
 def reserve_slot(eid, snum, uid):
     #spencer
