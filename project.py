@@ -296,9 +296,8 @@ def delete_organizer(uid):
         else:
             print("Success")
 
-    except Exception as e:
+    except Exception:
         print("Fail")
-        print(e)
 
     finally:
         cursor.close()
@@ -322,9 +321,8 @@ def available_events(date):
         for row in cursor.fetchall():
             print(f"{row[0]},{row[1]},{row[2]},{row[3]},{row[4]}")
 
-    except Exception as e:
+    except Exception:
         print("Fail")
-        print(e)
 
     finally:
         cursor.close()
@@ -349,9 +347,8 @@ def popular_event_types(n):
         for row in cursor.fetchall():
             print(f"{row[0]},{row[1]}")
 
-    except Exception as e:
+    except Exception:
         print("Fail")
-        print(e)
 
     finally:
         cursor.close()
@@ -389,9 +386,8 @@ def participant_schedule(uid):
         for row in rows:
             print(','.join('NULL' if val is None else str(val) for val in row))
 
-    except Exception as e:
+    except Exception:
         print("Fail")
-        print(e)
 
     finally:
         cursor.close()
@@ -423,9 +419,8 @@ def organizer_stats(n):
         for row in rows:
             print(','.join('' if val is None else str(val) for val in row))
 
-    except Exception as e:
+    except Exception:
         print("Fail")
-        print(e)
 
     finally:
         cursor.close()
@@ -456,9 +451,8 @@ def venue_events(vid):
         for row in rows:
             print(','.join('' if val is None else str(val) for val in row))
 
-    except Exception as e:
+    except Exception:
         print("Fail")
-        print(e)
 
     finally:
         cursor.close()
