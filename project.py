@@ -1,9 +1,11 @@
 import sys
 import os
-import mysql.connector
+import mysql.connector 
+import csv
 
 def get_connection():
     return mysql.connector.connect(
+        host='localhost',
         user='test',
         password='password',
         database='cs122a'
@@ -34,7 +36,7 @@ def import_data(folder):
                 username TEXT NOT NULL,
                 joined DATE NOT NULL,
                 PRIMARY KEY (uid)
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Organizer (
@@ -43,7 +45,7 @@ def import_data(folder):
                 experience INT NOT NULL,
                 PRIMARY KEY (uid),
                 FOREIGN KEY (uid) REFERENCES User(uid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Participant (
@@ -51,7 +53,7 @@ def import_data(folder):
                 type TEXT,
                 PRIMARY KEY (uid),
                 FOREIGN KEY (uid) REFERENCES User(uid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Administrator (
@@ -60,7 +62,7 @@ def import_data(folder):
                 lastname TEXT NOT NULL,
                 PRIMARY KEY (uid),
                 FOREIGN KEY (uid) REFERENCES User(uid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Event (
@@ -71,7 +73,7 @@ def import_data(folder):
                 datetime DATETIME NOT NULL,
                 PRIMARY KEY (eid),
                 FOREIGN KEY (creator_uid) REFERENCES Organizer(uid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Slot (
@@ -82,7 +84,7 @@ def import_data(folder):
                 PRIMARY KEY (eid, snum),
                 FOREIGN KEY (eid) REFERENCES Event(eid) ON DELETE CASCADE,
                 FOREIGN KEY (uid) REFERENCES Participant(uid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Venue (
@@ -92,7 +94,7 @@ def import_data(folder):
                 state TEXT NOT NULL,
                 zip TEXT NOT NULL,
                 PRIMARY KEY (vid)
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE OnCampus (
@@ -100,7 +102,7 @@ def import_data(folder):
                 code TEXT NOT NULL,
                 PRIMARY KEY (vid),
                 FOREIGN KEY (vid) REFERENCES Venue(vid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE OffCampus (
@@ -108,7 +110,7 @@ def import_data(folder):
                 distance INT NOT NULL,
                 PRIMARY KEY (vid),
                 FOREIGN KEY (vid) REFERENCES Venue(vid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Hosting (
@@ -118,7 +120,7 @@ def import_data(folder):
                 PRIMARY KEY (eid, vid),
                 FOREIGN KEY (eid) REFERENCES Event(eid) ON DELETE CASCADE,
                 FOREIGN KEY (vid) REFERENCES Venue(vid) ON DELETE CASCADE
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE Approval (
@@ -129,81 +131,93 @@ def import_data(folder):
                 PRIMARY KEY (uid, vid),
                 FOREIGN KEY (uid) REFERENCES Administrator(uid) ON DELETE CASCADE,
                 FOREIGN KEY (vid) REFERENCES OffCampus(vid) ON DELETE CASCADE
-            )
+            );
         """)
 
-        tables = ['User', 'Organizer', 'Participant', 'Administrator',
-                  'Event', 'Slot', 'Venue', 'OnCampus', 'OffCampus',
-                  'Hosting', 'Approval']
+        tables_files = [("User", "User.csv"), ("Organizer", "Organizer.csv"), ("Participant", "Participant.csv"),
+        ("Administrator", "Administrator.csv"),("Event", "Event.csv"), ("Slot", "Slot.csv"), ("Venue", "Venue.csv"),
+        ("OnCampus", "OnCampus.csv"),("OffCampus", "OffCampus.csv"), ("Hosting", "Hosting.csv"),("Approval", "Approval.csv")]
 
-        for table in tables:
-            filepath = os.path.join(folder, f"{table}.csv")
-            with open(filepath, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    values = line.split(',')
-                    placeholders = ','.join(['%s'] * len(values))
-                    values = [None if v == 'NULL' else v for v in values]
-                    cursor.execute(f"INSERT INTO {table} VALUES ({placeholders})", values)
+        for table_name, filename in tables_files:
+             filepath = os.path.join(folder, filename)
+             with open(filepath) as f:
+                reader = csv.reader(f) #better for edge cases
+                for values in reader:
+                    values = [None if v == "NULL" else v for v in values]
+                    placeholders = ",".join(["%s"] * len(values))
+                    sql = f"INSERT INTO {table_name} VALUES ({placeholders})"
+                    cursor.execute(sql, values)
 
         conn.commit()
+        cursor.close()
+        conn.close()
+        #return True
         print("Success")
 
     except Exception as e:
         print("Fail")
-        print(e)
-
-    finally:
-        cursor.close()
-        conn.close()
+        # print(e)
+        # return False
 
 def insert_admin(uid, email, username, joined, firstname, lastname):
     #jasmine
     try:
+        uid = int(uid)
         conn = get_connection()
         cursor = conn.cursor()
+
+        cursor.execute("SELECT uid FROM User WHERE uid = %s", (uid,))
+        if cursor.fetchone():
+            cursor.close()
+            conn.close()
+            #return False
+            print("Fail")
+            return
 
         cursor.execute("INSERT INTO User VALUES (%s, %s, %s, %s)", (uid, email, username, joined))
         cursor.execute("INSERT INTO Administrator VALUES (%s, %s, %s)", (uid, firstname, lastname))
 
         conn.commit()
+        cursor.close()
+        conn.close()
+        # return True
         print("Success")
 
     except Exception as e:
         print("Fail")
-        print(e)
-
-    finally:
-        cursor.close()
-        conn.close()
+        # print(e)
+        # return False
 
 def add_venue(eid, vid, is_primary):
     #jasmine
     try:
+        eid = int(eid)
+        vid = int(vid)
+        is_primary = is_primary.lower() == 'true'
+
         conn = get_connection()
         cursor = conn.cursor()
 
-        is_primary_bool = is_primary.lower() == 'true'
-
-        if is_primary_bool:
+        if is_primary:
             cursor.execute("SELECT * FROM Hosting WHERE eid = %s AND is_primary = true", (eid,))
             if cursor.fetchone():
+                cursor.close()
+                conn.close()
                 print("Fail")
                 return
+                # return False
 
-        cursor.execute("INSERT INTO Hosting VALUES (%s, %s, %s)", (eid, vid, is_primary_bool))
+        cursor.execute("INSERT INTO Hosting VALUES (%s, %s, %s)", (eid, vid, is_primary))
         conn.commit()
+        cursor.close()
+        conn.close()
         print("Success")
+        # return True
 
     except Exception as e:
         print("Fail")
-        print(e)
-
-    finally:
-        cursor.close()
-        conn.close()
+        # print(e)
+        # return False
 
 def reserve_slot(eid, snum, uid):
     #spencer
@@ -459,31 +473,36 @@ def venue_events(vid):
         conn.close()
 
 def main():
-    func = sys.argv[1]
 
-    if func == "import":
+    if len(sys.argv) < 2:
+        print("No command")
+        return
+
+    function_call = sys.argv[1]
+
+    if function_call == "import":
         import_data(sys.argv[2])
-    elif func == "insertAdmin":
+    elif function_call == "insertAdmin":
         insert_admin(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-    elif func == "addVenue":
+    elif function_call == "addVenue":
         add_venue(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif func == "reserveSlot":
+    elif function_call == "reserveSlot":
         reserve_slot(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif func == "cancelReservation":
+    elif function_call == "cancelReservation":
         cancel_reservation(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif func == "updateEvent":
+    elif function_call == "updateEvent":
         update_event(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif func == "deleteOrganizer":
+    elif function_call == "deleteOrganizer":
         delete_organizer(sys.argv[2])
-    elif func == "availableEvents":
+    elif function_call == "availableEvents":
         available_events(sys.argv[2])
-    elif func == "popularEventTypes":
+    elif function_call == "popularEventTypes":
         popular_event_types(sys.argv[2])
-    elif func == "participantSchedule":
+    elif function_call == "participantSchedule":
         participant_schedule(sys.argv[2])
-    elif func == "organizerStats":
+    elif function_call == "organizerStats":
         organizer_stats(sys.argv[2])
-    elif func == "venueEvents":
+    elif function_call == "venueEvents":
         venue_events(sys.argv[2])
 
 if __name__ == "__main__":
